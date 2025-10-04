@@ -1,0 +1,181 @@
+local player = game:GetService("Players").LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "CalculatorGUI"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local allButtons = {}
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 440)
+frame.Position = UDim2.new(0.5, -150, 0.5, -200)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+
+local display = Instance.new("TextBox")
+display.Size = UDim2.new(0, 280, 0, 60)
+display.Position = UDim2.new(0, 10, 0, 10)
+display.BackgroundColor3 = Color3.fromRGB(255,255,255)
+display.TextColor3 = Color3.fromRGB(0,0,0)
+display.Font = Enum.Font.MontserratBold
+display.TextSize = 36
+display.Text = ""
+display.ClearTextOnFocus = false
+display.TextXAlignment = Enum.TextXAlignment.Right
+display.Parent = frame
+display.TextEditable = false
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.FredokaOne
+closeBtn.TextSize = 24
+closeBtn.Text = "X"
+closeBtn.Parent = frame
+
+closeBtn.MouseButton1Click:Connect(function()
+	gui:Destroy()
+	script:Destroy()
+end)
+
+local buttons = {
+	{"AC","/","*","%"},
+	{"7","8","9","-"},
+	{"4","5","6","+"},
+	{"1","2","3","="},
+	{"0"}
+}
+
+local function createButton(text, x, y, w, h)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0, w, 0, h)
+	b.Position = UDim2.new(0, x, 0, y)
+	b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	b.TextColor3 = Color3.fromRGB(255,255,255)
+	b.Font = Enum.Font.MontserratBold
+	b.TextSize = 24
+	b.Text = text
+	b.Parent = frame
+	return b
+end
+
+local btnW, btnH = 60, 60
+local margin = 10
+local startX, startY = 10, 80
+
+for rowIndex, row in ipairs(buttons) do
+	for colIndex, value in ipairs(row) do
+		local x = startX + (colIndex-1)*(btnW + margin)
+		local y = startY + (rowIndex-1)*(btnH + margin)
+		local w = btnW
+		
+		if value == "0" then
+			w = btnW*2 + margin
+		end
+		createButton(value, x, y, w, btnH)
+	end
+end
+
+local Drag = Instance.new("UIDragDetector", frame)
+
+for _, child in ipairs(frame:GetChildren()) do
+	if child:IsA("TextButton") then
+		table.insert(allButtons, child)
+	end
+end
+
+local function setupButtonCallbacks(func)
+	for _, btn in ipairs(allButtons) do
+		btn.MouseButton1Click:Connect(function()
+			func(btn.Text)
+		end)
+	end
+end
+
+local function calculate(expr)
+	local stack = {}
+	local num = ""
+	local ops = {}
+
+	local precedence = {["+"]=1, ["-"]=1, ["*"]=2, ["/"]=2, ["%"]=2}
+
+	local function applyOp()
+		local b = table.remove(stack)
+		local a = table.remove(stack)
+		local op = table.remove(ops)
+		if op == "+" then table.insert(stack, a+b)
+		elseif op == "-" then table.insert(stack, a-b)
+		elseif op == "*" then table.insert(stack, a*b)
+		elseif op == "/" then table.insert(stack, a/b)
+		elseif op == "%" then table.insert(stack, a%b)
+		end
+	end
+
+	for i = 1,#expr do
+		local c = expr:sub(i,i)
+		if c:match("%d") or c == "." then
+			num = num..c
+		elseif c:match("[%+%-%*/%%]") then
+			table.insert(stack, tonumber(num))
+			num = ""
+			while #ops>0 and precedence[ops[#ops]] >= precedence[c] do
+				applyOp()
+			end
+			table.insert(ops,c)
+		end
+	end
+
+	if num ~= "" then
+		table.insert(stack, tonumber(num))
+	end
+
+	while #ops>0 do
+		applyOp()
+	end
+
+	return stack[1] or 0
+end
+
+
+setupButtonCallbacks(function(text)
+	if text == "0" then
+		display.Text = display.Text .. "0"
+	elseif text == "1" then
+		display.Text = display.Text .. "1"
+	elseif text == "2" then
+		display.Text = display.Text .. "2"
+	elseif text == "3" then
+		display.Text = display.Text .. "3"
+	elseif text == "4" then
+		display.Text = display.Text .. "4"
+	elseif text == "5" then
+		display.Text = display.Text .. "5"
+	elseif text == "6" then
+		display.Text = display.Text .. "6"
+	elseif text == "7" then
+		display.Text = display.Text .. "7"
+	elseif text == "8" then
+		display.Text = display.Text .. "8"
+	elseif text == "9" then
+		display.Text = display.Text .. "9"
+	elseif text == "AC" then
+		display.Text = ""
+	elseif text == "/" then
+		display.Text = display.Text .. "/"
+	elseif text == "*" then
+		display.Text = display.Text .. "*"
+	elseif text == "-" then
+		display.Text = display.Text .. "-"
+	elseif text == "+" then
+		display.Text = display.Text .. "+"
+	elseif text == "=" then
+		if display.Text:find("67") then
+			display.Text = "Six.. Seven.."
+		else
+			display.Text = tostring(calculate(display.Text))
+		end
+	end
+end)
